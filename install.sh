@@ -143,6 +143,14 @@ select_tools() {
         return
     fi
     
+    # 检查是否可以交互式输入
+    if [ ! -t 0 ] && [ ! -e /dev/tty ]; then
+        # 无法交互，默认安装全部
+        info "检测到非交互式环境，将安装全部工具"
+        SELECTED_TOOLS=("github-push" "docker-push" "git-gui")
+        return
+    fi
+    
     # 交互式选择
     echo ""
     echo -e "${BOLD}   请选择要安装的工具:${NC}"
@@ -156,12 +164,24 @@ select_tools() {
     echo -e "   ${CYAN}[3]${NC} 🎨 git-gui      - 命令行图形化 Git 管理"
     echo -e "       ${DIM}查看历史、回滚、分支管理、提交、推送等${NC}"
     echo ""
-    echo -e "   ${CYAN}[a]${NC} ✨ 全部安装"
+    echo -e "   ${CYAN}[a]${NC} ✨ 全部安装 ${GREEN}(默认)${NC}"
     echo ""
     echo -e "   ${DIM}输入编号，多个用空格或逗号分隔 (如: 1 3 或 1,2,3)${NC}"
+    echo -e "   ${DIM}直接回车将安装全部工具${NC}"
     echo ""
     
-    read -p "   请选择: " selection </dev/tty
+    # 尝试从 /dev/tty 读取
+    local selection=""
+    if [ -e /dev/tty ]; then
+        read -p "   请选择 [a]: " selection </dev/tty 2>/dev/null || selection="a"
+    else
+        read -p "   请选择 [a]: " selection 2>/dev/null || selection="a"
+    fi
+    
+    # 如果为空，默认全部安装
+    if [ -z "$selection" ]; then
+        selection="a"
+    fi
     
     # 解析选择
     if [[ "$selection" == "a" || "$selection" == "A" || "$selection" == "all" ]]; then
@@ -178,10 +198,10 @@ select_tools() {
         done
     fi
     
-    # 检查是否选择了工具
+    # 如果没有选中任何有效工具，默认全部
     if [ ${#SELECTED_TOOLS[@]} -eq 0 ]; then
-        warning "未选择任何工具"
-        exit 0
+        info "未识别的选择，将安装全部工具"
+        SELECTED_TOOLS=("github-push" "docker-push" "git-gui")
     fi
 }
 
@@ -243,7 +263,11 @@ install_gh_cli() {
     
     echo ""
     echo -e "   ${YELLOW}GitHub CLI 未安装${NC} (github-push 需要)"
-    read -p "   是否现在安装? [Y/n]: " install_gh </dev/tty
+    
+    local install_gh="y"
+    if [ -e /dev/tty ]; then
+        read -p "   是否现在安装? [Y/n]: " install_gh </dev/tty 2>/dev/null || install_gh="y"
+    fi
     
     if [[ "$install_gh" == "n" || "$install_gh" == "N" ]]; then
         warning "跳过 GitHub CLI 安装"
@@ -325,7 +349,12 @@ main() {
         echo -e "      ${GREEN}✓${NC} $tool - $desc"
     done
     echo ""
-    read -p "   确认安装? [Y/n]: " confirm </dev/tty
+    
+    # 尝试读取确认
+    local confirm="y"
+    if [ -e /dev/tty ]; then
+        read -p "   确认安装? [Y/n]: " confirm </dev/tty 2>/dev/null || confirm="y"
+    fi
     
     if [[ "$confirm" == "n" || "$confirm" == "N" ]]; then
         warning "已取消安装"
