@@ -48,6 +48,7 @@ cat << 'EOF'
   ║                                                   ║
   ║   github-push  - 一键推送到 GitHub                ║
   ║   docker-push  - 一键推送到 Docker Hub            ║
+  ║   git-gui      - 命令行图形化 Git 管理            ║
   ║                                                   ║
   ╚═══════════════════════════════════════════════════╝
 EOF
@@ -133,9 +134,11 @@ echo ""
 if [ "$LOCAL_INSTALL" = true ]; then
     install_command "github-push" "$SCRIPT_DIR/scripts/push-to-github.sh"
     install_command "docker-push" "$SCRIPT_DIR/scripts/push-to-dockerhub.sh"
+    install_command "git-gui" "$SCRIPT_DIR/scripts/git-gui.sh"
 else
     install_command "github-push" "push-to-github.sh"
     install_command "docker-push" "push-to-dockerhub.sh"
+    install_command "git-gui" "git-gui.sh"
 fi
 
 # 安装 GitHub CLI（可选）
@@ -181,6 +184,9 @@ echo "               支持创建仓库、选择公开/私有"
 echo ""
 echo -e "  ${CYAN}${BOLD}docker-push${NC}  推送 Docker 镜像到 Docker Hub"
 echo "               支持打标签、选择公开/私有"
+echo ""
+echo -e "  ${CYAN}${BOLD}git-gui${NC}      命令行图形化 Git 管理"
+echo "               查看历史、回滚、分支、提交等"
 echo ""
 echo "  📖 使用示例:"
 echo ""

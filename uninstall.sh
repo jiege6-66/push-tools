@@ -28,7 +28,7 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-for cmd in github-push docker-push; do
+for cmd in github-push docker-push git-gui; do
     if [ -f "$INSTALL_DIR/$cmd" ]; then
         rm -f "$INSTALL_DIR/$cmd"
         success "已删除: $cmd"
