@@ -31,8 +31,29 @@ echo -e "${NC}"
 
 # 检查是否在 git 仓库中
 if [ ! -d ".git" ]; then
-    error "当前目录不是 Git 仓库！"
-    exit 1
+    warning "当前目录不是 Git 仓库！"
+    echo ""
+    read -p "是否在此目录初始化 Git 仓库? [Y/n]: " init_choice
+    
+    if [[ "$init_choice" != "n" && "$init_choice" != "N" ]]; then
+        echo ""
+        info "正在初始化 Git 仓库..."
+        git init
+        
+        # 检查是否有文件
+        if [ -z "$(ls -A)" ]; then
+            warning "当前目录为空，创建一个 README.md"
+            echo "# $(basename "$PWD")" > README.md
+        fi
+        
+        git add .
+        git commit -m "🎉 Initial commit"
+        success "Git 仓库初始化完成"
+        echo ""
+    else
+        error "需要 Git 仓库才能继续"
+        exit 1
+    fi
 fi
 
 # 检查 GitHub CLI
