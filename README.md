@@ -16,17 +16,43 @@
 
 ## 📦 一键安装
 
+### 交互式安装（选择工具）
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/jiege6-66/push-tools/master/install.sh | sudo bash
 ```
 
-或使用 wget：
+安装时会显示菜单让你选择要安装的工具：
 
-```bash
-wget -qO- https://raw.githubusercontent.com/jiege6-66/push-tools/master/install.sh | sudo bash
+```
+   请选择要安装的工具:
+
+   [1] 🚀 github-push  - 一键推送项目到 GitHub
+   [2] 🐳 docker-push  - 一键推送镜像到 Docker Hub
+   [3] 🎨 git-gui      - 命令行图形化 Git 管理
+
+   [a] ✨ 全部安装
+
+   输入编号，多个用空格或逗号分隔 (如: 1 3 或 1,2,3)
 ```
 
-## 🔧 手动安装
+### 安装全部工具
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/jiege6-66/push-tools/master/install.sh | sudo bash -s -- --all
+```
+
+### 只安装指定工具
+
+```bash
+# 只安装 github-push 和 git-gui
+curl -fsSL https://raw.githubusercontent.com/jiege6-66/push-tools/master/install.sh | sudo bash -s -- --only github-push,git-gui
+
+# 只安装 git-gui
+curl -fsSL https://raw.githubusercontent.com/jiege6-66/push-tools/master/install.sh | sudo bash -s -- --only git-gui
+```
+
+### 手动安装
 
 ```bash
 git clone https://github.com/jiege6-66/push-tools.git
