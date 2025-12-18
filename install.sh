@@ -369,7 +369,7 @@ main() {
     local installed=0
     for tool in "${SELECTED_TOOLS[@]}"; do
         if install_command "$tool"; then
-            ((installed++))
+            installed=$((installed + 1))
         fi
     done
     
