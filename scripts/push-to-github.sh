@@ -263,11 +263,25 @@ main() {
         
         # 推送
         BRANCH=$(git rev-parse --abbrev-ref HEAD)
-        if git push -u origin "$BRANCH" --force; then
+        
+        # 尝试正常推送
+        if git push -u origin "$BRANCH"; then
             success "推送成功！"
         else
-            error "推送失败"
-            exit 1
+            echo ""
+            warning "推送失败 (可能是远程有新的提交)"
+            read -p "是否尝试强制推送 (Force Push)? [y/N]: " force_choice
+            if [[ "$force_choice" == "y" || "$force_choice" == "Y" ]]; then
+                if git push -u origin "$BRANCH" --force; then
+                    success "强制推送成功！"
+                else
+                    error "推送失败"
+                    exit 1
+                fi
+            else
+                error "推送失败，请手动检查冲突"
+                exit 1
+            fi
         fi
     fi
     

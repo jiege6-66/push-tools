@@ -314,17 +314,33 @@ interactive_add() {
     local i=1
     
     # 获取所有更改的文件
-    while IFS= read -r file; do
+    # 使用 while read 配合 git status --porcelain -z 来正确处理带空格的文件名
+    local i=1
+    while IFS= read -r -d '' line; do
+        # 提取状态和文件名
+        # 状态在前两个字符，文件名从第4个字符开始
+        local status="${line:0:2}"
+        local file="${line:3}"
+        
         files+=("$file")
-        local status=""
-        if git diff --name-only | grep -q "^$file$"; then
-            status="${YELLOW}[修改]${NC}"
-        elif git ls-files --others --exclude-standard | grep -q "^$file$"; then
-            status="${RED}[新文件]${NC}"
+        
+        local status_text=""
+        # 简单的状态映射
+        if [[ "$status" == ?\? ]]; then
+            status_text="${RED}[新文件]${NC}"
+        elif [[ "$status" == *M* ]]; then
+            status_text="${YELLOW}[修改]${NC}"
+        elif [[ "$status" == *D* ]]; then
+            status_text="${RED}[删除]${NC}"
+        elif [[ "$status" == *A* ]]; then
+            status_text="${GREEN}[添加]${NC}"
+        else
+            status_text="[${status}]"
         fi
-        echo -e "   ${CYAN}[$i]${NC} $file $status"
+        
+        echo -e "   ${CYAN}[$i]${NC} $file $status_text"
         ((i++))
-    done < <(git status --porcelain | awk '{print $2}')
+    done < <(git status --porcelain -z)
     
     echo ""
     echo -e "   ${CYAN}[a]${NC} 添加全部"
@@ -947,4 +963,5 @@ main() {
 
 # 运行
 main "$@"
+
 

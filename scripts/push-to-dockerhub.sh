@@ -148,26 +148,80 @@ main() {
     echo ""
     info "检查本地 Docker 镜像..."
     
-    LOCAL_IMAGE=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "rust-stream" | head -1)
+    # 获取当前目录名作为默认搜索关键词
+    CURRENT_DIR_NAME=$(basename "$PWD")
     
+    # 尝试查找包含当前目录名的镜像，优先使用最新构建的
+    LOCAL_IMAGE=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep "$CURRENT_DIR_NAME" | head -1)
+    
+    # 如果找不到，列出最近构建的几个镜像让用户选择，而不是自动选择第一个
     if [ -z "$LOCAL_IMAGE" ]; then
-        warning "未找到 rust-stream 镜像"
-        read -p "是否现在构建镜像? [Y/n]: " build_choice
-        if [[ "$build_choice" != "n" && "$build_choice" != "N" ]]; then
-            info "正在构建镜像..."
-            docker compose build
-            LOCAL_IMAGE=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "rust-stream" | head -1)
+        echo ""
+        warning "未找到与当前目录名 ($CURRENT_DIR_NAME) 匹配的镜像"
+        echo "最近构建的镜像:"
+        
+        # 获取最近5个镜像，带编号
+        mapfile -t RECENT_IMAGES < <(docker images --format "{{.Repository}}:{{.Tag}} ({{.CreatedSince}})" | head -5)
+        
+        if [ ${#RECENT_IMAGES[@]} -eq 0 ]; then
+             # 如果没有镜像
+             LOCAL_IMAGE=""
         else
-            error "需要镜像才能推送"
-            exit 1
+            for i in "${!RECENT_IMAGES[@]}"; do
+                echo "  [$((i+1))] ${RECENT_IMAGES[$i]}"
+            done
+            echo ""
+            read -p "请选择要推送的镜像编号 (输入 n 手动输入): " img_choice
+            
+            if [[ "$img_choice" =~ ^[0-9]+$ ]] && [ "$img_choice" -ge 1 ] && [ "$img_choice" -le "${#RECENT_IMAGES[@]}" ]; then
+                # 提取镜像名 (去除后面的时间)
+                SELECTED_LINE="${RECENT_IMAGES[$((img_choice-1))]}"
+                LOCAL_IMAGE=$(echo "$SELECTED_LINE" | awk '{print $1}')
+            elif [[ "$img_choice" != "n" && "$img_choice" != "N" ]]; then
+                warning "无效选择，将手动输入"
+                LOCAL_IMAGE=""
+            else
+                 LOCAL_IMAGE=""
+            fi
         fi
     fi
     
-    success "找到本地镜像: $LOCAL_IMAGE"
+    if [ -z "$LOCAL_IMAGE" ]; then
+        echo ""
+        read -p "是否现在构建镜像? [Y/n]: " build_choice
+        if [[ "$build_choice" != "n" && "$build_choice" != "N" ]]; then
+            info "正在构建镜像..."
+            docker compose build || docker build -t "$CURRENT_DIR_NAME" .
+            LOCAL_IMAGE=$(docker images --format "{{.Repository}}:{{.Tag}}" | head -1)
+        else
+            echo ""
+            read -p "请输入本地镜像名称: " LOCAL_IMAGE
+            if [ -z "$LOCAL_IMAGE" ]; then
+                error "需要镜像才能推送"
+                exit 1
+            fi
+        fi
+    fi
     
+    success "已选择镜像: $LOCAL_IMAGE"
+    
+    # 确认是否使用此镜像
+    echo ""
+    read -p "确认使用此镜像? [Y/n]: " use_image
+    if [[ "$use_image" == "n" || "$use_image" == "N" ]]; then
+        echo ""
+        read -p "请输入要推送的本地镜像名: " LOCAL_IMAGE
+    fi
+    
+    if [ -z "$LOCAL_IMAGE" ]; then
+        error "镜像名不能为空"
+        exit 1
+    fi
+
     # 4. 设置镜像名称
     echo ""
-    DEFAULT_IMAGE_NAME="rust-stream"
+    # 默认从本地镜像名中提取 repo 名 (去除 tag)
+    DEFAULT_IMAGE_NAME=$(echo "$LOCAL_IMAGE" | cut -d':' -f1 | awk -F'/' '{print $NF}')
     echo -e "请输入 Docker Hub 镜像名称 [${GREEN}$DEFAULT_IMAGE_NAME${NC}]: "
     read -r IMAGE_NAME
     IMAGE_NAME=${IMAGE_NAME:-$DEFAULT_IMAGE_NAME}
